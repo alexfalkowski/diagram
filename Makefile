@@ -17,14 +17,14 @@ setup-plantuml: setup-bin ## Install the mermaid tool
 setup: setup-cli setup-plantuml ## Install all the tools
 
 clean: ## Clean all files
-	rm -f *.png
-	rm -f *.puml
+	rm -rf structurizr/**/*.png
+	rm -rf structurizr/**/*.puml
 
 generate-plantuml: ## Generate plantuml diagram
-	bin/structurizr.sh export -workspace connect.dsl -format plantuml
+	bin/structurizr.sh export -workspace structurizr/$(type)/main.dsl -format plantuml
 
 generate-image: ## Generate diagram image
-	java -Djava.awt.headless=true -jar bin/plantuml.jar -progress -o . *.puml
+	java -Djava.awt.headless=true -jar bin/plantuml.jar -progress -o . structurizr/$(type)/*.puml
 
 generate: clean generate-plantuml generate-image ## Generate diagram
 

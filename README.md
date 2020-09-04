@@ -31,5 +31,5 @@ To quickly see how your diagram might look like you can use the [tool](https://s
 Just run the following:
 
 ```sh
-make generate
+make type=connect generate
 ```

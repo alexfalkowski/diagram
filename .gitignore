@@ -1,6 +1,5 @@
 vendor
 reports/cover.*
-structurizr
 .env
 bin
 *.puml
