@@ -11,14 +11,18 @@ setup-cli: setup-bin ## Install the structurizr tool
 	unzip -o structurizr-cli.zip -d bin
 	rm -f structurizr-cli.zip
 
-setup-plantuml: setup-bin ## Install the mermaid tool
+setup-plantuml: setup-bin ## Install the plantuml tool
 	curl -o bin/plantuml.jar -L https://netix.dl.sourceforge.net/project/plantuml/plantuml.jar
 
-setup: setup-cli setup-plantuml ## Install all the tools
+setup-diagrams: ## Install the diagrams tool
+	pip install diagrams
+
+setup: setup-cli setup-plantuml setup-diagrams ## Install all the tools
 
 clean: ## Clean all files
 	rm -rf structurizr/**/*.png
 	rm -rf structurizr/**/*.puml
+	rm -rf diagrams/**/*.png
 
 generate-plantuml: ## Generate plantuml diagram
 	bin/structurizr.sh export -workspace structurizr/$(type)/main.dsl -format plantuml
@@ -26,7 +30,11 @@ generate-plantuml: ## Generate plantuml diagram
 generate-image: ## Generate diagram image
 	java -Djava.awt.headless=true -jar bin/plantuml.jar -progress -o . structurizr/$(type)/*.puml
 
-generate: clean generate-plantuml generate-image ## Generate diagram
+generate-diagrams: ## Generate diagrams diagram
+	python diagrams/$(type)/main.py
+	mv $(type).png diagrams/$(type)
+
+generate: clean generate-plantuml generate-image generate-diagrams ## Generate diagram
 
 publish: ## Publish workspace to structurizr
 	bin/structurizr.sh push -id ${STRUCTURIZR_WORKSPACE_ID} -key ${STRUCTURIZR_KEY} -secret ${STRUCTURIZR_SECRET} -workspace connect.dsl
