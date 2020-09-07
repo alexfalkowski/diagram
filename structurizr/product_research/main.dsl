@@ -1,91 +1,162 @@
-workspace "Connect" "As Gelato is growing its Network, we are more and more getting in contact with situations where our Gelato workflow with ready-to-print files is not the optimal solution for sending orders to partners." {
+workspace "Product Research" "Sellers are looking to find products that already sell well on Amazon." {
     model {
-        networkSoftwareSystem = softwareSystem "Network Service" "Creates orders and receives updates." "Network"
-        connectSoftwareSystem = softwareSystem "Connect Service" "Handle orders for parners." "Connect" {
-            apiContainer = container "API" "Provides JSON/HTTPS API." "Go with Go-kit" {
-                connectAPIComponent = component "Connect" "Handles subscribe webhooks." "conx package"
-                partnerAPIComponent = component "Partner" "Handles status postback and dispatch order." "ptnr package"
+        portalSoftwareSystem = softwareSystem "Portal" "Amazon Software Tool." "Portal"
+        scrapeySoftwareSystem = softwareSystem "Scrapey Service" "Scrapes amazon." "Scrapey" {
+            scrapeyAPIContainer = container "API" "Provides JSON/HTTPS API." "Go" {
+                scrapeyHealthAPIComponent = component "Health" "Handles health checks."
             }
-            workerContainer = container "Worker" "Handles AMQP." "Go with Go-kit" {
-                connectWorkerComponent = component "Connect" "Handles a placed order." "conx package"
+            scrapeyWorkerContainer = container "Worker" "Handles AMQP." "Go" {
+                scrapeyCatecoryWorkerComponent = component "Category" "Handles the category pages."
+                scrapeyProductWorkerComponent = component "Product" "Handles the product pages."
             }
-
-            databaseContainer = container "Database" "Stores webhooks." "PostgreSQL" "Database"
-            amqpContainer = container "AMQP" "Order ready messages." "RabbitMQ" "Database"
+            scrapeyAMQPContainer = container "AMQP" "Events for scraped pages." "RabbitMQ" "Database"
         }
-        partnerSoftwareSystem = softwareSystem "Print Partner" "Produces the order and ships." "Partner"
-        productSoftwareSystem = softwareSystem "Product Platform" "Product information." "Product"
-        sentrySoftwareSystem = softwareSystem "Sentry" "Shared application monitoring."
-        keycloakSoftwareSystem = softwareSystem "Keycloak" "Handle authentication and authorisation system."
-        jaegerSoftwareSystem = softwareSystem "Jaeger" "Distributed tracing."
+        amazonSoftwareSystem = softwareSystem "Amazon Service" "Amazon MWS API" "Amazon" {
+            amazonAPIContainer = container "API" "Provides JSON/HTTPS API." "Ruby" {
+                amazonHealthAPIComponent = component "Health" "Handles health checks."
+            }
+            amazonWorkerContainer = container "Worker" "Handles AMQP." "Ruby" {
+                amazonProductWorkerComponent = component "Product" "Handles product MWS."
+            }
 
-        networkSoftwareSystem -> connectSoftwareSystem "Sends an order." "AMQP"
-        connectSoftwareSystem -> partnerSoftwareSystem "Sends an order to be produced." "HTTPS"
-        connectSoftwareSystem -> productSoftwareSystem "Gets product details." "gRPC"
-        partnerSoftwareSystem -> connectSoftwareSystem "Sends order status information." "HTTPS"
-        connectSoftwareSystem -> sentrySoftwareSystem "Sends critical failure alerts." "HTTPS" "Asynchronous, Alert"
-        connectSoftwareSystem -> jaegerSoftwareSystem "Sends distributed traces using OpenTracing." "UDP" "Asynchronous"
-        connectSoftwareSystem -> keycloakSoftwareSystem "Generates JWT tokens." "HTTPS"
+            amazonAMQPContainer = container "AMQP" "Events for data retrieved." "RabbitMQ" "Database"
+        }
+        researchSoftwareSystem = softwareSystem "Research Service" "Up to date list of as many of the top selling amazon products" "Research" {
+            researchAPIContainer = container "API" "Provides JSON/HTTPS API." "Go" {
+                researchHealthAPIComponent = component "Health" "Handles health checks."
+                researchProductAPIComponent = component "Product" "Filter best selling products."
+            }
+            researchWorkerContainer = container "Worker" "Handles AMQP." "Go" {
+                researchProductWorkerComponent = component "Product" "Handles product MWS."
+            }
 
-        partnerSoftwareSystem -> partnerAPIComponent "Order status." "HTTPS"
-        partnerSoftwareSystem -> connectAPIComponent "Subscribe webhook." "HTTPS"
-        connectAPIComponent -> databaseContainer "Save webhook." "TCP"
-        partnerAPIComponent -> databaseContainer "Get webhook." "TCP"
-        partnerAPIComponent -> networkSoftwareSystem "Dispatch order." "HTTPS"
-        connectWorkerComponent -> amqpContainer "Order ready to be dispatched." "AMQP"
-        connectWorkerComponent -> partnerSoftwareSystem "Submit order." "HTTPS"
-        connectWorkerComponent -> productSoftwareSystem "Get product details." "gRPC"
-        connectWorkerComponent -> amqpContainer "Success/Failure for submit order." "AMQP"
+            researchDatabaseContainer = container "Database" "Stores products." "PostgreSQL" "Database"
+            researchAMQPContainer = container "AMQP" "Events from other services." "RabbitMQ" "Database"
+        }
+        mwsSoftwareSystem = softwareSystem "Amazon MWS" "Amazon MWS." "MWS"
+        sentrySoftwareSystem = softwareSystem "Sentry" "Shared application monitoring." "Sentry"
+        newRelicSoftwareSystem = softwareSystem "New Relic" "APM Solution." "NewRelic"
+        scrapingHubSoftwareSystem = softwareSystem "Scraping Hub" "Complete Web Data Extraction." "ScrapingHub"
+        logEntriesSoftwareSystem = softwareSystem "Log Entries" "Live Log Management and Analytics." "LogEntries"
 
-        deploymentEnvironment "Live" {
-            deploymentNode "connect-live***" "" "Debian Buster" "Kubernetes - node" 3 {
-                deploymentNode "Go" "" "golang:1.14.6" "Kubernetes - pod" {
-                    liveAPIContainerInstance = containerInstance apiContainer
+        portalSoftwareSystem -> researchSoftwareSystem "Filter products." "HTTPS"
+        researchSoftwareSystem -> scrapeySoftwareSystem "Find all best selling products." "AMQP"
+        scrapeySoftwareSystem -> scrapeySoftwareSystem "All products from catergories." "AMQP"
+        scrapeySoftwareSystem -> researchSoftwareSystem "Best selling products." "AMQP"
+        scrapeySoftwareSystem -> scrapingHubSoftwareSystem "Get amazon HTML pages." "HTTPS"
+        amazonSoftwareSystem -> researchSoftwareSystem "Best selling products." "AMQP"
+        amazonSoftwareSystem -> mwsSoftwareSystem "Best selling products through MWS" "HTTPS"
+        researchSoftwareSystem -> sentrySoftwareSystem "Sends critical failure alerts." "HTTPS" "Asynchronous, Alert"
+        researchSoftwareSystem -> newRelicSoftwareSystem "Sends diagnostic information." "HTTPS" "Asynchronous, Alert"
+        researchSoftwareSystem -> logEntriesSoftwareSystem "Sends logs." "TCP"
+        newRelicSoftwareSystem -> researchSoftwareSystem "Health checks." "HTTPS"
+        scrapeySoftwareSystem -> sentrySoftwareSystem "Sends critical failure alerts." "HTTPS" "Asynchronous, Alert"
+        scrapeySoftwareSystem -> newRelicSoftwareSystem "Sends diagnostic information." "HTTPS" "Asynchronous, Alert"
+        scrapeySoftwareSystem -> logEntriesSoftwareSystem "Sends logs." "TCP"
+        newRelicSoftwareSystem -> scrapeySoftwareSystem "Health checks." "HTTPS"
+        amazonSoftwareSystem -> sentrySoftwareSystem "Sends critical failure alerts." "HTTPS" "Asynchronous, Alert"
+        amazonSoftwareSystem -> newRelicSoftwareSystem "Sends diagnostic information." "HTTPS" "Asynchronous, Alert"
+        amazonSoftwareSystem -> logEntriesSoftwareSystem "Sends logs." "TCP"
+        newRelicSoftwareSystem -> amazonSoftwareSystem "Health checks." "HTTPS"
+
+        scrapeyWorkerContainer -> scrapeyAMQPContainer "Category in region." "AMQP"
+        scrapeyWorkerContainer -> scrapeyAMQPContainer "Product in region." "AMQP"
+        scrapeyWorkerContainer -> scrapingHubSoftwareSystem "Amazon pages" "HTTPS"
+        researchAPIContainer -> researchDatabaseContainer "Get products." "TCP"
+        researchWorkerContainer -> researchDatabaseContainer "Save products." "TCP"
+        researchWorkerContainer -> researchAMQPContainer "Best selling products." "AMQP"
+        amazonWorkerContainer -> amazonAMQPContainer "Best selling products." "AMQP"
+        amazonWorkerContainer -> mwsSoftwareSystem "Product API." "HTTPS"
+
+        deploymentEnvironment "Research" {
+            deploymentNode "research-live***" "" "Debian Buster" "Kubernetes - node" 3 {
+                deploymentNode "Go" "" "golang:1.15.1" "Kubernetes - pod" {
+                    researchAPIContainerInstance = containerInstance researchAPIContainer
                 }
             }
 
-            deploymentNode "connect-live-worker***" "" "Debian Buster" "Kubernetes - node" 3 {
-                deploymentNode "Go" "" "golang:1.14.6" "Kubernetes - pod" {
-                    liveWorkerContainerInstance = containerInstance workerContainer
+            deploymentNode "research-live-worker***" "" "Debian Buster" "Kubernetes - node" 3 {
+                deploymentNode "Go" "" "golang:1.15.1" "Kubernetes - pod" {
+                    researchWorkerContainerInstance = containerInstance researchWorkerContainer
                 }
             }
 
-            deploymentNode "pg-gelato-connect-live2" "" "Red Hat 4.8.5-11" "Amazon Web Services - RDS" {
+            deploymentNode "research-live" "" "" "Amazon Web Services - RDS" {
                 deploymentNode "PostgreSQL" "" "PostgreSQL 11.4" "Amazon Web Services - RDS Amazon RDS instance" {
-                    liveDatabaseContainerInstance = containerInstance databaseContainer
+                    researchDatabaseContainerInstance = containerInstance researchDatabaseContainer
                 }
             }
 
-            deploymentNode "rabbitmq.service.consul" "" "" "Amazon Web Services - Simple Queue Service SQS" {
+            deploymentNode "cloudamqp.com" "" "" "Amazon Web Services - Simple Queue Service SQS" {
                 deploymentNode "RabbitMQ" "" "RabbitMQ 3.8.5" "Amazon Web Services - Simple Queue Service SQS Queue" {
-                    liveAMQPContainerInstance = containerInstance amqpContainer
+                    researchAMQPContainerInstance = containerInstance researchAMQPContainer
                 }
             }
         }
     }
 
     views {
-        systemContext connectSoftwareSystem "SystemContext" {
+        systemContext scrapeySoftwareSystem "ScrapeySystemContext" {
             include *
             autoLayout
         }
 
-        container connectSoftwareSystem "Containers" {
+        container scrapeySoftwareSystem "ScrapeyContainers" {
             include *
             autoLayout
         }
 
-        component apiContainer "ComponentsAPI" {
+        component scrapeyAPIContainer "ScrapeyComponentsAPI" {
             include *
             autoLayout
         }
 
-        component workerContainer "ComponentsWorker" {
+        component scrapeyWorkerContainer "ScrapeyComponentsWorker" {
             include *
             autoLayout
         }
 
-        deployment connectSoftwareSystem "Live" "LiveDeployment" {
+        systemContext amazonSoftwareSystem "AmazonSystemContext" {
+            include *
+            autoLayout
+        }
+
+        container amazonSoftwareSystem "AmazonContainers" {
+            include *
+            autoLayout
+        }
+
+        component amazonAPIContainer "AmazonComponentsAPI" {
+            include *
+            autoLayout
+        }
+
+        component amazonWorkerContainer "AmazonComponentsWorker" {
+            include *
+            autoLayout
+        }
+
+        systemContext researchSoftwareSystem "ResearchSystemContext" {
+            include *
+            autoLayout
+        }
+
+        container researchSoftwareSystem "ResearchContainers" {
+            include *
+            autoLayout
+        }
+
+        component researchAPIContainer "ResearchComponentsAPI" {
+            include *
+            autoLayout
+        }
+
+        component researchWorkerContainer "ResearchComponentsWorker" {
+            include *
+            autoLayout
+        }
+
+        deployment researchSoftwareSystem "Research" "ResearchDeployment" {
             include *
             autoLayout
         }
@@ -105,8 +176,40 @@ workspace "Connect" "As Gelato is growing its Network, we are more and more gett
                 color #ffffff
                 shape Component
             }
-            element "Connect" {
-                background #799351
+            element "Portal" {
+                background #776D5A
+                color #ffffff
+            }
+            element "Scrapey" {
+                background #987D7C
+                color #ffffff
+            }
+            element "Amazon" {
+                background #A09CB0
+                color #ffffff
+            }
+            element "Research" {
+                background #A3B9C9
+                color #ffffff
+            }
+            element "MWS" {
+                background #49306B
+                color #ffffff
+            }
+            element "Sentry" {
+                background #635380
+                color #ffffff
+            }
+            element "NewRelic" {
+                background #90708C
+                color #ffffff
+            }
+            element "ScrapingHub" {
+                background #ACE4AA
+                color #ffffff
+            }
+            element "LogEntries" {
+                background #56E39F
                 color #ffffff
             }
             element "Database" {
