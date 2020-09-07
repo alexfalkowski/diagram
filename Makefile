@@ -22,6 +22,7 @@ setup: setup-cli setup-plantuml setup-diagrams ## Install all the tools
 clean: ## Clean all files
 	rm -rf structurizr/**/*.png
 	rm -rf structurizr/**/*.puml
+	rm -rf diagrams/**/*.png
 
 generate-plantuml: ## Generate plantuml diagram
 	bin/structurizr.sh export -workspace structurizr/$(type)/main.dsl -format plantuml
