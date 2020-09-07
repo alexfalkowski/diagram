@@ -67,7 +67,34 @@ workspace "Product Research" "Sellers are looking to find products that already 
         researchWorkerContainer -> researchAMQPContainer "Best selling products." "AMQP"
         amazonWorkerContainer -> amazonAMQPContainer "Best selling products." "AMQP"
         amazonWorkerContainer -> mwsSoftwareSystem "Product API." "HTTPS"
+
+        deploymentEnvironment "Research" {
+            deploymentNode "research-live***" "" "Debian Buster" "Kubernetes - node" 3 {
+                deploymentNode "Go" "" "golang:1.15.1" "Kubernetes - pod" {
+                    researchAPIContainerInstance = containerInstance researchAPIContainer
+                }
+            }
+
+            deploymentNode "research-live-worker***" "" "Debian Buster" "Kubernetes - node" 3 {
+                deploymentNode "Go" "" "golang:1.15.1" "Kubernetes - pod" {
+                    researchWorkerContainerInstance = containerInstance researchWorkerContainer
+                }
+            }
+
+            deploymentNode "research-live" "" "" "Amazon Web Services - RDS" {
+                deploymentNode "PostgreSQL" "" "PostgreSQL 11.4" "Amazon Web Services - RDS Amazon RDS instance" {
+                    researchDatabaseContainerInstance = containerInstance researchDatabaseContainer
+                }
+            }
+
+            deploymentNode "cloudamqp.com" "" "" "Amazon Web Services - Simple Queue Service SQS" {
+                deploymentNode "RabbitMQ" "" "RabbitMQ 3.8.5" "Amazon Web Services - Simple Queue Service SQS Queue" {
+                    researchAMQPContainerInstance = containerInstance researchAMQPContainer
+                }
+            }
+        }
     }
+
     views {
         systemContext scrapeySoftwareSystem "ScrapeySystemContext" {
             include *
@@ -125,6 +152,11 @@ workspace "Product Research" "Sellers are looking to find products that already 
         }
 
         component researchWorkerContainer "ResearchComponentsWorker" {
+            include *
+            autoLayout
+        }
+
+        deployment researchSoftwareSystem "Research" "ResearchDeployment" {
             include *
             autoLayout
         }
