@@ -15,7 +15,7 @@ setup-plantuml: setup-bin ## Install the plantuml tool
 	curl -o bin/plantuml.jar -L https://netix.dl.sourceforge.net/project/plantuml/plantuml.jar
 
 setup-diagrams: ## Install the diagrams tool
-	pip install diagrams
+	pip3 install -U diagrams --user
 
 setup: setup-cli setup-plantuml setup-diagrams ## Install all the tools
 
@@ -31,7 +31,7 @@ generate-image: ## Generate diagram image
 	java -Djava.awt.headless=true -jar bin/plantuml.jar -progress -o . structurizr/$(type)/*.puml
 
 generate-diagrams: ## Generate diagrams diagram
-	python diagrams/$(type)/main.py
+	python3 diagrams/$(type)/main.py
 	mv $(type).png diagrams/$(type)
 
 generate: clean generate-plantuml generate-image generate-diagrams ## Generate diagram
