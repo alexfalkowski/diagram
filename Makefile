@@ -15,7 +15,7 @@ setup-plantuml: setup-bin ## Install the plantuml tool
 	curl -o bin/plantuml.jar -L https://netix.dl.sourceforge.net/project/plantuml/plantuml.jar
 
 setup-diagrams: ## Install the diagrams tool
-	pip3 install -U diagrams --user
+	pip3 install -U diagrams==0.21.1 --user
 
 setup: setup-cli setup-plantuml setup-diagrams ## Install all the tools
 
