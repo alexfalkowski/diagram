@@ -7,7 +7,7 @@ setup-bin: clean-setup
 	mkdir -p bin
 
 setup-cli: setup-bin ## Install the structurizr tool
-	curl -o structurizr-cli.zip -L https://github.com/structurizr/cli/releases/download/v1.9.0/structurizr-cli-1.9.0.zip
+	curl -o structurizr-cli.zip -L https://github.com/structurizr/cli/releases/download/v1.18.0/structurizr-cli-1.18.0.zip
 	unzip -o structurizr-cli.zip -d bin
 	rm -f structurizr-cli.zip
 
